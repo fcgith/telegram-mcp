@@ -102,9 +102,14 @@ func serve(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("register dialogs tool: %w", err)
 	}
 
-	err = server.RegisterTool("tg_send", "Send draft message to dialog", client.SendDraft)
+	err = server.RegisterTool("tg_send", "Save a draft message to a dialog WITHOUT sending it. This only stages the text in the dialog's input box and does NOT deliver it to the recipient. To actually send/deliver a message, use tg_send_message instead.", client.SendDraft)
 	if err != nil {
-		return fmt.Errorf("register dialogs tool: %w", err)
+		return fmt.Errorf("register draft tool: %w", err)
+	}
+
+	err = server.RegisterTool("tg_send_message", "Send a text message to a dialog (user, group, or channel) and actually DELIVER it to the recipient. Use this whenever you want a message to be sent or to reply in a conversation. The 'name' argument is the dialog name as returned by tg_dialogs. (To only stage an unsent draft without delivering, use tg_send instead.)", client.Send)
+	if err != nil {
+		return fmt.Errorf("register send tool: %w", err)
 	}
 
 	err = server.RegisterTool("tg_read", "Mark dialog messages as read", client.ReadHistory)
