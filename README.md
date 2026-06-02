@@ -1,3 +1,12 @@
+> **Fork notice — minor modified version.**
+> This is a lightly modified fork of [chaindead/telegram-mcp](https://github.com/chaindead/telegram-mcp).
+> The only addition is a new **`tg_send_message`** tool that *actually delivers* a message to a dialog
+> (the upstream `tg_send` only saves an unsent draft). The original `tg_send` draft tool and every other
+> behaviour are left unchanged. All credit for the project goes to the upstream author; see the
+> [upstream repository](https://github.com/chaindead/telegram-mcp) for full documentation.
+
+---
+
 [![](https://badge.mcpx.dev?type=server 'MCP Server')](https://github.com/punkpeye/awesome-mcp-servers?tab=readme-ov-file#communication)
 [![](https://img.shields.io/badge/OS_Agnostic-Works_Everywhere-purple)](https://github.com/chaindead/telegram-mcp?tab=readme-ov-file#installation)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
