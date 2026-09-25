@@ -34,15 +34,21 @@ type DialogsArguments struct {
 }
 
 type MessageInfo struct {
-	Who      string `json:"who,omitempty"`
-	When     string `json:"when"`
-	Text     string `json:"text,omitempty"`
-	IsUnread bool   `json:"is_unread,omitempty"`
-	ts       int
+	ID        int    `json:"id,omitempty"`
+	FromID    int64  `json:"from_id,omitempty"`
+	ReplyToID int    `json:"reply_to_id,omitempty"`
+	Out       bool   `json:"out,omitempty"`
+	Date      int    `json:"date,omitempty"`
+	Who       string `json:"who,omitempty"`
+	When      string `json:"when"`
+	Text      string `json:"text,omitempty"`
+	IsUnread  bool   `json:"is_unread,omitempty"`
+	ts        int
 }
 
 type DialogInfo struct {
 	Name        string       `json:"name,omitempty"`
+	Peer        string       `json:"peer"`
 	Type        string       `json:"type"`
 	Title       string       `json:"title"`
 	LastMessage *MessageInfo `json:"last_message,omitempty"`
@@ -268,6 +274,7 @@ func (d *dialogs) processDialog(dialogItem *tg.Dialog) (DialogInfo, error) {
 	if err != nil {
 		return DialogInfo{}, err
 	}
+	info.Peer = d.peerHandle(dialogItem.Peer)
 
 	info.Type = string(d.getType(dialogItem))
 
@@ -309,6 +316,26 @@ func (d *dialogs) getNameID(pC tg.PeerClass) (string, string, error) {
 	}
 
 	return name, username, nil
+}
+
+// peerHandle is the stable id-based handle of a dialog; it survives username
+// changes and resolves without a network call (see parsePeerHandle).
+func (d *dialogs) peerHandle(pC tg.PeerClass) string {
+	switch p := pC.(type) {
+	case *tg.PeerUser:
+		if u, ok := d.users[p.UserID]; ok {
+			return peerHandle(u)
+		}
+	case *tg.PeerChannel:
+		if c, ok := d.channels[p.ChannelID]; ok {
+			return peerHandle(c)
+		}
+	case *tg.PeerChat:
+		if c, ok := d.chats[p.ChatID]; ok {
+			return peerHandle(c)
+		}
+	}
+	return ""
 }
 
 func (d *dialogs) getType(rawD *tg.Dialog) DialogType {
