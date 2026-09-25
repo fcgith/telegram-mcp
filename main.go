@@ -3,15 +3,10 @@ package main
 import (
 	"context"
 	"os"
-	"path/filepath"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v3"
-)
-
-const (
-	dir = ".telegram-mcp"
 )
 
 func main() {
@@ -28,14 +23,6 @@ func main() {
 		log.Logger = log.Output(logFile)
 		log.Info().Msgf("Enabling debug logging to %s", debugPath)
 	}
-
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to get home dir")
-	}
-
-	configDir := filepath.Join(homeDir, dir)
-	sesionPath := filepath.Join(configDir, "session.json")
 
 	app := &cli.Command{
 		Name:  "telegram-mcp",
@@ -54,10 +41,12 @@ func main() {
 				Sources:  cli.EnvVars("TG_API_HASH"),
 			},
 			&cli.StringFlag{
-				Name:    "session",
-				Usage:   "Path to session file",
-				Value:   sesionPath,
-				Sources: cli.EnvVars("TG_SESSION_PATH"),
+				// gpcv: no default, so this build never picks up a personal
+				// ~/.telegram-mcp session by accident.
+				Name:     "session",
+				Usage:    "Path to session file",
+				Required: true,
+				Sources:  cli.EnvVars("TG_SESSION_PATH"),
 			},
 			&cli.StringFlag{
 				Name:    "schema-version",
@@ -66,7 +55,7 @@ func main() {
 			},
 			&cli.BoolFlag{
 				Name:        "dry",
-				Usage:       "Test configuration",
+				Usage:       "Check the session with GetMe only and print it as JSON",
 				Local:       true,
 				HideDefault: true,
 			},
@@ -84,8 +73,9 @@ func main() {
 					},
 					&cli.StringFlag{
 						Name:        "password",
-						Usage:       "Password for 2FA if exists",
+						Usage:       "Password for 2FA if exists (prefer TG_2FA_PASSWORD env over argv)",
 						HideDefault: true,
+						Sources:     cli.EnvVars("TG_2FA_PASSWORD"),
 					},
 					&cli.BoolFlag{
 						Name:        "new",
