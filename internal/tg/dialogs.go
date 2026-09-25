@@ -229,7 +229,7 @@ func (d *dialogs) Offset() DialogsOffset {
 		return DialogsOffset{
 			MsgID: msg.ID,
 			Date:  msg.Date,
-			Peer:  getInputPeerID(dialogItem.Peer),
+			Peer:  d.inputPeer(dialogItem.Peer),
 		}
 	}
 
@@ -316,6 +316,22 @@ func (d *dialogs) getNameID(pC tg.PeerClass) (string, string, error) {
 	}
 
 	return name, username, nil
+}
+
+// inputPeer is getInputPeerID plus the access hash, which Telegram needs to
+// accept a user/channel as the offset peer of the next dialogs page.
+func (d *dialogs) inputPeer(pC tg.PeerClass) tg.InputPeerClass {
+	switch p := pC.(type) {
+	case *tg.PeerUser:
+		if u, ok := d.users[p.UserID]; ok {
+			return &tg.InputPeerUser{UserID: u.ID, AccessHash: u.AccessHash}
+		}
+	case *tg.PeerChannel:
+		if c, ok := d.channels[p.ChannelID]; ok {
+			return &tg.InputPeerChannel{ChannelID: c.ID, AccessHash: c.AccessHash}
+		}
+	}
+	return getInputPeerID(pC)
 }
 
 // peerHandle is the stable id-based handle of a dialog; it survives username

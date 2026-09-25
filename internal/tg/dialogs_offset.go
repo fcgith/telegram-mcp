@@ -34,15 +34,15 @@ func (o DialogsOffset) MarshalJSON() ([]byte, error) {
 
 func (o *DialogsOffset) String() string {
 
-	var id int64
+	var id, hash int64
 	var peerType string
 	switch p := o.Peer.(type) {
 	case *tg.InputPeerUser:
 		peerType = "user"
-		id = p.UserID
+		id, hash = p.UserID, p.AccessHash
 	case *tg.InputPeerChannel:
 		peerType = "chan"
-		id = p.ChannelID
+		id, hash = p.ChannelID, p.AccessHash
 	case *tg.InputPeerChat:
 		peerType = "chat"
 		id = p.ChatID
@@ -54,13 +54,26 @@ func (o *DialogsOffset) String() string {
 		return "end"
 	}
 
+	if hash != 0 {
+		// gpcv: the access hash rides along (as uint64: no '-' inside a part).
+		return fmt.Sprintf("%s-%d-%d-%d-%d", peerType, id, o.MsgID, o.Date, uint64(hash))
+	}
+
 	return fmt.Sprintf("%s-%d-%d-%d", peerType, id, o.MsgID, o.Date)
 }
 
 func (o *DialogsOffset) UnmarshalJSON(data []byte) error {
 	parts := strings.Split(string(data), "-")
-	if len(parts) != 4 {
+	if len(parts) != 4 && len(parts) != 5 {
 		return fmt.Errorf("invalid format")
+	}
+
+	var hash uint64
+	if len(parts) == 5 {
+		var err error
+		if hash, err = strconv.ParseUint(parts[4], 10, 64); err != nil {
+			return fmt.Errorf("invalid access hash: %w", err)
+		}
 	}
 
 	var err error
@@ -68,11 +81,11 @@ func (o *DialogsOffset) UnmarshalJSON(data []byte) error {
 	case "user":
 		var userID int64
 		userID, err = strconv.ParseInt(parts[1], 10, 64)
-		o.Peer = &tg.InputPeerUser{UserID: userID}
+		o.Peer = &tg.InputPeerUser{UserID: userID, AccessHash: int64(hash)}
 	case "chan":
 		var channelID int64
 		channelID, err = strconv.ParseInt(parts[1], 10, 64)
-		o.Peer = &tg.InputPeerChannel{ChannelID: channelID}
+		o.Peer = &tg.InputPeerChannel{ChannelID: channelID, AccessHash: int64(hash)}
 	case "chat":
 		var chatID int64
 		chatID, err = strconv.ParseInt(parts[1], 10, 64)

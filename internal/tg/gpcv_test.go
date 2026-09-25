@@ -131,3 +131,31 @@ func TestSendReceipt(t *testing.T) {
 		t.Fatalf("random_id precision: %d %v", a.RandomID, err)
 	}
 }
+
+func TestDialogsOffsetKeepsAccessHash(t *testing.T) {
+	d, err := newDialogs(&tg.MessagesDialogsSlice{
+		Dialogs:  []tg.DialogClass{&tg.Dialog{Peer: &tg.PeerUser{UserID: 5}}},
+		Messages: []tg.MessageClass{&tg.Message{ID: 30, Date: 77, PeerID: &tg.PeerUser{UserID: 5}}},
+		Users:    []tg.UserClass{&tg.User{ID: 5, AccessHash: -123, FirstName: "A"}},
+	}, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info := d.Info(); len(info) != 1 || info[0].Peer != "usr[5:-123]" || info[0].Name != "usr[5:-123]" {
+		t.Fatalf("dialog info: %+v", info)
+	}
+	off := d.Offset()
+	s := off.String()
+	var back DialogsOffset
+	if err := back.UnmarshalJSON([]byte(s)); err != nil {
+		t.Fatalf("%s: %v", s, err)
+	}
+	u, ok := back.Peer.(*tg.InputPeerUser)
+	if !ok || u.UserID != 5 || u.AccessHash != -123 || back.MsgID != 30 || back.Date != 77 {
+		t.Fatalf("round trip %s -> %+v", s, back)
+	}
+	var old DialogsOffset
+	if err := old.UnmarshalJSON([]byte("chat-9-1-2")); err != nil {
+		t.Fatalf("4-part offset: %v", err)
+	}
+}
